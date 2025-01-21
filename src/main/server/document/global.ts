@@ -81,14 +81,17 @@ export async function useGlobal<T extends Object = Object>(identifier: string) {
      */
     async function increment(fieldName: string, value: number = 1): Promise<number> {
         const client = await db.getClient();
-        const updatedValue = await client
-            .collection(CollectionNames.Global)
-            .findOneAndUpdate(
-                { _id: data[identifier]._id },
-                { $inc: { [fieldName]: value } },
-                { upsert: true, returnDocument: 'after' },
-            );
-        data[identifier][fieldName] = updatedValue.value[fieldName];
+        if (data[identifier][fieldName] !== undefined) {
+            const updatedValue = await client
+                .collection(CollectionNames.Global)
+                .findOneAndUpdate({ identifier }, { $inc: { [fieldName]: value } }, { returnDocument: 'after' });
+            data[identifier][fieldName] = updatedValue[fieldName];
+        } else {
+            const updatedValue = await client
+                .collection(CollectionNames.Global)
+                .findOneAndUpdate({ identifier }, { $set: { [fieldName]: value } }, { returnDocument: 'after' });
+            data[identifier][fieldName] = updatedValue[fieldName];
+        }
         return data[identifier][fieldName];
     }
 
